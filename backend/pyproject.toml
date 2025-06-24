@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bizfindr-backend"
-version = "0.2.0"
+version = "0.2.1"
 description = "BizFindr Backend API"
 authors = ["BizFindr Team <dev@bizfindr.example.com>"]
 readme = "README.md"
