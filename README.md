@@ -12,9 +12,7 @@ A web application that fetches and displays business registration data from the 
 - Searchable web interface
 - RESTful API endpoints
 - Docker containerization
-- Background task processing with Celery
-- Scheduled tasks with Celery Beat
-- Real-time task monitoring with Flower
+- Background task processing (coming soon)
 - Redis-based caching and rate limiting
 - Comprehensive logging and monitoring
 
@@ -43,8 +41,7 @@ A web application that fetches and displays business registration data from the 
    - `SECRET_KEY`: A secure secret key for the application
    - `MONGO_URI`: MongoDB connection string (default: `mongodb://mongo:27017/bizfindr`)
    - `REDIS_URL`: Redis connection URL (default: `redis://redis:6379/0`)
-   - `CELERY_BROKER_URL`: Celery broker URL (default: `redis://redis:6379/1`)
-   - `FLOWER_BASIC_AUTH`: Credentials for Flower dashboard (default: `admin:admin`)
+   - `REDIS_URL`: Redis connection URL (default: `redis://redis:6379/0`)
 
 4. Start the application with Docker Compose:
    ```bash
@@ -55,48 +52,14 @@ A web application that fetches and displays business registration data from the 
    - Flask application (port 5000)
    - MongoDB (port 27017)
    - Redis (port 6379)
-   - Celery worker
-   - Celery beat (for scheduled tasks)
-   - Flower (task monitoring dashboard, port 5555)
 
 5. Access the application:
    - Web interface: http://localhost:5000
    - API documentation: http://localhost:5000/api/docs
-   - Flower dashboard: http://localhost:5555 (username/password from FLOWER_BASIC_AUTH)
 
 ## Background Tasks
 
-BizFindr uses Celery for background task processing. The following task queues are available:
-
-- `default`: General purpose tasks
-- `metrics`: Business metrics calculation and reporting
-- `notifications`: Email and user notifications
-- `maintenance`: System cleanup and maintenance tasks
-- `import`: Data import tasks
-- `export`: Data export tasks
-- `reports`: Report generation tasks
-
-### Scheduled Tasks
-
-The following periodic tasks are configured by default:
-
-| Task | Schedule | Description |
-|------|----------|-------------|
-| `update_business_metrics` | Hourly | Updates business metrics and analytics |
-| `cleanup_old_data` | Daily at 2 AM | Cleans up old data and temporary files |
-| `send_daily_digest` | Daily at 8 AM | Sends daily digest emails to users |
-
-### Monitoring Tasks
-
-Celery tasks can be monitored using the Flower dashboard:
-
-1. Access the Flower dashboard at http://localhost:5555
-2. Use the credentials from `FLOWER_BASIC_AUTH` (default: admin/admin)
-3. View task status, workers, and task history
-
-### Running Tasks Manually
-
-You can run tasks manually using the Celery CLI:
+Background task processing is currently being refactored. This section will be updated with the new implementation details soon.
 
 ```bash
 # Start a Celery worker
@@ -167,10 +130,10 @@ Configure alerts for:
 
 ### Common Issues
 
-1. **Tasks not executing**
-   - Check Celery worker logs: `docker-compose logs celery-worker`
+1. **Background tasks not executing**
+   - Background task processing is currently being refactored
+   - Check application logs for any errors
    - Verify Redis connection
-   - Check task routing and queue configuration
 
 2. **Task failures**
    - Check task logs in Flower
@@ -223,9 +186,6 @@ For additional help, check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md).
 | `SECRET_KEY` | - | Secret key for session management |
 | `MONGO_URI` | `mongodb://mongo:27017/bizfindr` | MongoDB connection string |
 | `REDIS_URL` | `redis://redis:6379/0` | Redis connection URL |
-| `CELERY_BROKER_URL` | `redis://redis:6379/1` | Celery broker URL |
-| `CELERY_RESULT_BACKEND` | `redis://redis:6379/1` | Celery result backend |
-| `FLOWER_BASIC_AUTH` | `admin:admin` | Flower dashboard credentials |
 | `CT_API_KEY` | - | CT.gov API key |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `LOG_FILE` | `/var/log/bizfindr/app.log` | Log file path |

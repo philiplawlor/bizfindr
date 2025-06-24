@@ -1,6 +1,6 @@
 # BizFindr Backend
 
-This is the backend service for the BizFindr application, built with Flask, Celery, and MongoDB.
+This is the backend service for the BizFindr application, built with Flask and MongoDB.
 
 ## Setup
 
