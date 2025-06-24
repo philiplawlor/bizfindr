@@ -47,5 +47,6 @@ else
              --access-logfile - \
              --error-logfile - \
              --log-file=- \
-             app:app
+             --chdir /app \
+             wsgi:app
 fi

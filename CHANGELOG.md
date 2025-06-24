@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-06-24
+
+### Fixed
+- Fixed backend container startup issues by implementing direct script generation in Dockerfile
+- Resolved health endpoint registration in Flask-RESTx API namespace
+- Added proper error handling and logging for container startup
+- Fixed line ending issues in shell scripts
+
 ### Removed
 - Removed Celery, Celery Beat, and Flower services
 - Removed Celery-related dependencies and configuration
