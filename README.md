@@ -1,6 +1,9 @@
-# BizFindr
+# BizFindr (v0.2.0)
 
 A web application that fetches and displays business registration data from the Connecticut Open Data API.
+
+**Version:** 0.2.0  
+**Last Updated:** June 24, 2025
 
 ## Features
 
