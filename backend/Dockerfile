@@ -16,9 +16,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_NO_INTERACTION=1 \
     POETRY_NO_DEV=1 \
     FLASK_APP=app \
-    FLASK_ENV=production \
-    CELERY_BROKER_URL=redis://redis:6379/1 \
-    CELERY_RESULT_BACKEND=redis://redis:6379/1
+    FLASK_ENV=production
 
 # Set work directory
 WORKDIR /app

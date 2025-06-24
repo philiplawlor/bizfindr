@@ -19,14 +19,6 @@ pytz = "^2023.3"
 
 # Redis
 redis = "^5.0.1"
-hiredis = "^2.2.3"
-
-# Celery
-celery = {extras = ["redis"], version = "^5.3.4"}
-flower = "^2.0.1"
-billiard = "^4.1.0"
-kombu = "^5.3.1"
-vine = "^5.0.0"
 
 # API
 flask-restx = "^1.1.0"
@@ -110,5 +102,3 @@ asyncio_mode = "auto"
 
 [poetry.scripts]
 bizfindr = "app.main:main"
-celery-worker = "app.core.celery_app:celery_app"
-celery-beat = "app.core.celery_app:celery_app"

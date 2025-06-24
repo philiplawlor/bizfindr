@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- N/A
+### Removed
+- Removed Celery, Celery Beat, and Flower services
+- Removed Celery-related dependencies and configuration
+- Removed task queue functionality (to be replaced in a future release)
 
 ## [0.2.0] - 2025-06-24
 

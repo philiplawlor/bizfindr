@@ -41,9 +41,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
     REDIS_CACHE_TTL: int = int(os.getenv("REDIS_CACHE_TTL", "300"))
     
-    # Celery Settings
-    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/1")
-    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
+    # Background task settings will go here in the future
     
     # Flower Settings
     FLOWER_BASIC_AUTH: str = os.getenv("FLOWER_BASIC_AUTH", "admin:admin")
