@@ -4,7 +4,7 @@
 set -e
 
 # Set default environment variables
-export FLASK_APP=${FLASK_APP:-app}
+export FLASK_APP=${FLASK_APP:-wsgi:app}
 export FLASK_ENV=${FLASK_ENV:-production}
 
 # Function to check if a service is ready

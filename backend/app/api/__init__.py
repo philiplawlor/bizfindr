@@ -25,6 +25,20 @@ api = Api(
 # Namespace for all API routes
 ns = api.namespace('v1', description='API version 1')
 
+# Health check endpoint
+@ns.route('/health')
+class HealthCheck(Resource):
+    """Health check endpoint for monitoring"""
+    
+    @api.doc('health_check')
+    def get(self):
+        """Health check endpoint"""
+        return {
+            "status": "ok",
+            "environment": current_app.config.get('ENV', 'development'),
+            "version": current_app.config.get('VERSION', '1.0.0')
+        }
+
 # API Models
 pagination_model = api.model('Pagination', {
     'page': fields.Integer(description='Current page number'),

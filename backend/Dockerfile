@@ -15,7 +15,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
     POETRY_NO_DEV=1 \
-    FLASK_APP=app \
+    FLASK_APP=wsgi:app \
     FLASK_ENV=production
 
 # Set work directory
