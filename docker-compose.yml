@@ -1,0 +1,261 @@
+# version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bizfindr-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_DB=bizfindr
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_CACHE_TTL=300
+      - API_BASE_URL=https://data.ct.gov/resource/n7gp-d28j.json
+      - CACHE_TYPE=RedisCache
+      - CACHE_REDIS_URL=redis://redis:6379/0
+      - CACHE_DEFAULT_TIMEOUT=300
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONFAULTHANDLER=1
+      - MONGO_URI=mongodb://mongo:27017/bizfindr  # For backward compatibility
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bizfindr-network
+      
+  redis:
+    image: redis:7-alpine
+    container_name: bizfindr-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bizfindr-network
+      
+  # Celery worker for processing background tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bizfindr-celery-worker
+    command: >
+      bash -c "cd /app && \
+      export PYTHONPATH=/app && \
+      celery -A app.core.celery_app worker \
+        --loglevel=info \
+        --concurrency=4 \
+        --hostname=worker1@%%h \
+        -Q celery,high_priority,low_priority \
+        -n worker1@%%h"
+    env_file:
+      - ./backend/.env
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=$${FLASK_ENV:-development}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONFAULTHANDLER=1
+      - PYTHONPATH=/app
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - MONGO_URI=mongodb://mongo:27017/bizfindr
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - bizfindr-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "celery", "inspect", "ping", "-A", "app.core.celery_app"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Celery Beat for scheduling periodic tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bizfindr-celery-beat
+    command: >
+      bash -c "cd /app && \
+      export PYTHONPATH=/app && \
+      mkdir -p /var/run/celery && \
+      celery -A app.core.celery_app beat \
+        --loglevel=info \
+        --schedule=/var/run/celery/beat-schedule \
+        --pidfile=/var/run/celery/beat.pid"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONFAULTHANDLER=1
+      - PYTHONPATH=/app
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - MONGO_URI=mongodb://mongo:27017/bizfindr
+    volumes:
+      - ./backend:/app
+      - celery-beat-data:/var/run/celery
+    working_dir: /app
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - bizfindr-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Flower for monitoring Celery
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bizfindr-flower
+    command: >
+      bash -c "cd /app && \
+      export PYTHONPATH=/app && \
+      celery -A app.core.celery_app flower \
+        --port=5555 \
+        --basic_auth=$${FLOWER_BASIC_AUTH:-admin:admin} \
+        --max_tasks=1000 \
+        --max_workers=1000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=$${FLASK_ENV:-development}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONFAULTHANDLER=1
+      - PYTHONPATH=/app
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - MONGO_URI=mongodb://mongo:27017/bizfindr
+      - FLOWER_BASIC_AUTH=$${FLOWER_BASIC_AUTH:-admin:admin}
+    working_dir: /app
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    networks:
+      - bizfindr-network
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6.0
+    container_name: bizfindr-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: bizfindr
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - bizfindr-network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: bizfindr-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    depends_on:
+      - mongo
+    networks:
+      - bizfindr-network
+
+networks:
+  bizfindr-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.0.0/16
+          gateway: 172.30.0.1
+
+volumes:
+  mongo-data:
+  redis-data:
+  celery-beat-data:
+  celery-beat-pid:

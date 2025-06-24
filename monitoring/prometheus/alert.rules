@@ -1,0 +1,124 @@
+# Alert rules for BizFindr application
+
+groups:
+- name: node_alerts
+  rules:
+  - alert: HighCpuUsage
+    expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.instance }}"
+      description: "CPU usage is {{ $value }}%"
+
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.instance }}"
+      description: "Memory usage is {{ $value | printf "%.2f" }}%"
+
+  - alert: HighDiskUsage
+    expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 85
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High disk usage on {{ $labels.instance }}"
+      description: "Disk usage is {{ $value | printf "%.2f" }}%"
+
+- name: mongodb_alerts
+  rules:
+  - alert: MongodbDown
+    expr: up{job="mongodb"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "MongoDB is down"
+      description: "MongoDB instance is not responding to metrics collection"
+
+  - alert: HighMongodbConnections
+    expr: mongodb_connections_current > mongodb_connections_available * 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High MongoDB connections on {{ $labels.instance }}"
+      description: "MongoDB connections at {{ $value | printf "%.0f" }}/{{ $labels.max_connections }}"
+
+- name: application_alerts
+  rules:
+  - alert: ApplicationDown
+    expr: up{job="bizfindr"} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Application is down"
+      description: "The BizFindr application is not responding to metrics collection"
+
+  - alert: HighRequestLatency
+    expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High request latency on {{ $labels.instance }}"
+      description: "95th percentile request latency is {{ $value }}s"
+
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate on {{ $labels.instance }}"
+      description: "Error rate is {{ $value | printf "%.2f" }}%"
+
+  - alert: HighDatabaseQueryTime
+    expr: rate(mongodb_query_duration_seconds_sum[5m]) / rate(mongodb_query_duration_seconds_count[5m]) > 0.5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High database query time on {{ $labels.instance }}"
+      description: "Average query time is {{ $value | printf "%.3f" }}s"
+
+- name: business_metrics_alerts
+  rules:
+  - alert: NoNewBusinessesRegistered
+    expr: changes(business_registrations_total[1h]) == 0
+    for: 2h
+    labels:
+      severity: warning
+    annotations:
+      summary: "No new businesses registered in the last 2 hours"
+      description: "Expected regular business registrations but none detected"
+
+  - alert: HighApiErrorRate
+    expr: rate(api_requests_total{status=~"4..|5.."}[5m]) / rate(api_requests_total[5m]) > 0.05
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High API error rate on {{ $labels.instance }}"
+      description: "API error rate is {{ $value | printf "%.2f" }}%"
+
+  - alert: SchedulerNotRunning
+    expr: time() - scheduler_last_run_timestamp_seconds > 3600  # 1 hour
+    for: 15m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Scheduler not running"
+      description: "The scheduled tasks have not run in over 1 hour"
+
+# Alertmanager configuration
+alertmanager_configs:
+  - static_configs:
+    - targets:
+      - 'alertmanager:9093'

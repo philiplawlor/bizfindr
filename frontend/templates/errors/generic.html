@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ status_code }} - BizFindr{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="error-container p-5 rounded-3 bg-white shadow-sm">
+                <div class="error-number text-{{ 'danger' if status_code >= 500 else 'warning' }} mb-4" 
+                     style="font-size: 8rem; font-weight: 900; line-height: 1;">
+                    {{ status_code }}
+                </div>
+                <h1 class="h2 mb-4">
+                    {% if status_code == 400 %}
+                        Bad Request
+                    {% elif status_code == 401 %}
+                        Unauthorized
+                    {% elif status_code == 403 %}
+                        Forbidden
+                    {% elif status_code == 404 %}
+                        Page Not Found
+                    {% elif status_code == 405 %}
+                        Method Not Allowed
+                    {% elif status_code == 500 %}
+                        Server Error
+                    {% else %}
+                        An Error Occurred
+                    {% endif %}
+                </h1>
+                
+                <div class="alert alert-{{ 'danger' if status_code >= 500 else 'warning' }} text-start">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        <div>
+                            <strong>Error Details:</strong>
+                            <p class="mb-0 mt-2">
+                                {% if error %}
+                                    {{ error }}
+                                {% else %}
+                                    An unexpected error occurred while processing your request.
+                                {% endif %}
+                            </p>
+                            {% if error_ref %}
+                                <div class="mt-2 small">
+                                    Reference ID: <code>{{ error_ref }}</code>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="text-muted">
+                        {% if status_code == 400 %}
+                            The server could not understand your request. Please check your input and try again.
+                        {% elif status_code == 401 %}
+                            You need to be logged in to access this page.
+                        {% elif status_code == 403 %}
+                            You don't have permission to access this resource.
+                        {% elif status_code == 404 %}
+                            The page you're looking for doesn't exist or has been moved.
+                        {% elif status_code == 405 %}
+                            The requested method is not allowed for this resource.
+                        {% elif status_code == 500 %}
+                            Something went wrong on our end. We've been notified and are working on a fix.
+                        {% else %}
+                            An unexpected error occurred. Please try again later.
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3 mt-5">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary px-4">
+                        <i class="fas fa-home me-2"></i> Go to Homepage
+                    </a>
+                    
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary px-4">
+                        <i class="fas fa-arrow-left me-2"></i> Go Back
+                    </button>
+                    
+                    {% if status_code >= 500 %}
+                    <button id="refreshPage" class="btn btn-outline-primary px-4">
+                        <i class="fas fa-sync-alt me-2"></i> Try Again
+                    </button>
+                    {% endif %}
+                </div>
+                
+                {% if status_code >= 500 %}
+                <div class="mt-4">
+                    <p class="small text-muted">
+                        If the problem persists, please contact our support team and provide the reference ID above.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if status_code >= 500 %}
+<script>
+// Auto-refresh the page after 30 seconds if it's a server error
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        window.location.reload();
+    }, 30000);
+    
+    // Manual refresh
+    document.getElementById('refreshPage').addEventListener('click', function() {
+        window.location.reload();
+    });
+});
+</script>
+{% endif %}
+
+<style>
+.error-container {
+    background: linear-gradient(180deg, #f8f9fc 0%, #ffffff 100%);
+    border: 1px solid #e3e6f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .d-flex.justify-content-center {
+        flex-direction: column;
+        gap: 1rem !important;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,145 @@
+# Global configuration
+global:
+  # The smarthost and SMTP sender used for mail notifications
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alertmanager@bizfindr.com'
+  smtp_auth_username: 'alertmanager@example.com'
+  smtp_auth_password: 'your-smtp-password'
+  smtp_require_tls: true
+  
+  # Slack API URL
+  slack_api_url: 'https://hooks.slack.com/services/...'
+
+# Custom templates for alerts
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# The root route on which each incoming alert enters
+route:
+  # Default receiver
+  receiver: 'slack-notifications'
+  
+  # Group alerts by alertname and service
+  group_by: ['alertname', 'service']
+  
+  # Send initial notification after 1 minute
+  group_wait: 1m
+  
+  # Send batch of new alerts if this alert is still firing after 5 minutes
+  group_interval: 5m
+  
+  # Send the same notification again every 4 hours if the alert is still firing
+  repeat_interval: 4h
+  
+  # All the above attributes are inherited by all child routes and can 
+  # overwritten on each.
+  routes:
+  # Critical alerts
+  - match:
+      severity: critical
+    receiver: 'pagerduty'
+    continue: true
+    
+  # Warning alerts
+  - match:
+      severity: warning
+    receiver: 'slack-notifications'
+    continue: true
+    
+  # Database related alerts
+  - match:
+      service: mongodb
+    receiver: 'dba-team'
+    continue: true
+  
+  # High priority alerts during business hours
+  - match_re:
+      severity: ^(warning|critical)$
+    receiver: 'slack-notifications'
+    continue: true
+    
+    # Only during business hours
+    active_time_intervals:
+      - workhours
+
+# Notification receivers
+receivers:
+- name: 'null'
+
+- name: 'slack-notifications'
+  slack_configs:
+  - channel: '#alerts'
+    send_resolved: true
+    title: '{{ template "slack.default.title" . }}'
+    text: '{{ template "slack.default.text" . }}'
+    icon_emoji: ':fire:'
+    color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+    actions:
+    - type: button
+      text: 'View in Grafana :grafana:'
+      url: 'http://grafana.example.com/d/{{ .CommonLabels.alertname }}'
+    - type: button
+      text: 'Silence :no_bell:'
+      url: '{{ template "alertmanager.silenceLink" . }}'
+
+- name: 'pagerduty'
+  pagerduty_configs:
+  - routing_key: 'your-pagerduty-key'
+    description: '{{ .CommonAnnotations.summary }}'
+    details:
+      firing: '{{ .Alerts.Firing | len }}'
+      resolved: '{{ .Alerts.Resolved | len }}'
+      num_firing: '{{ .Alerts.Firing | len }}'
+      num_resolved: '{{ .Alerts.Resolved | len }}'
+      resolved: '{{ template "pagerduty.default.description" .}}'
+      group: '{{ .CommonLabels.alertname }}'
+      source: '{{ .CommonLabels.instance }}'
+      severity: '{{ .CommonLabels.severity }}'
+      custom_details: '{{ .CommonAnnotations | toJson }}'
+
+- name: 'email'
+  email_configs:
+  - to: 'alerts@bizfindr.com'
+    send_resolved: true
+    headers:
+      subject: '{{ template "email.default.subject" . }}'
+    html: '{{ template "email.default.html" . }}'
+
+- name: 'dba-team'
+  slack_configs:
+  - channel: '#dba-alerts'
+    send_resolved: true
+    title: '{{ template "slack.dba.title" . }}'
+    text: '{{ template "slack.dba.text" . }}'
+    icon_emoji: ':database:'
+    color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+# Time intervals for routing
+time_intervals:
+- name: 'workhours'
+  time_intervals:
+  - weekdays: ['monday:friday']
+    times:
+    - start_time: '09:00'
+      end_time: '17:00'
+  - days_of_month: ['1:7', '-7:-1']
+    months: ['1:12']
+    times:
+    - start_time: '00:00'
+      end_time: '23:59'
+
+# Inhibit rules
+inhibit_rules:
+# Alert 'HighMemoryUsage' inhibits 'HighCpuUsage' if they have the same 'instance' label
+- source_match:
+    alertname: 'HighMemoryUsage'
+  target_match:
+    alertname: 'HighCpuUsage'
+  equal: ['instance']
+  
+# Alert 'ApplicationDown' inhibits all other alerts for that instance
+- source_match:
+    alertname: 'ApplicationDown'
+  target_match_re:
+    alertname: '.+'
+  equal: ['instance']

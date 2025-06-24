@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Home - BizFindr{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold">Business Registration Data</h1>
+        <p class="lead">Discover and explore business registrations in Connecticut</p>
+        
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Total Registrations</h6>
+                                <h2 class="mb-0">{{ "{:,}".format(stats.total_registrations) }}</h2>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-building text-primary fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Last Updated</h6>
+                                <h5 class="mb-0" id="last-updated">
+                                    {% if stats.latest_registration %}
+                                        {{ stats.latest_registration.strftime('%B %d, %Y') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </h5>
+                                <small class="text-muted"><span id="last-updated-time">Loading...</span></small>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-sync-alt text-success fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase text-muted mb-1">Data Source</h6>
+                                <h5 class="mb-0">CT Data Portal</h5>
+                                <small class="text-muted">Updated daily</small>
+                            </div>
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-database text-info fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Quick Actions</h5>
+                            <div>
+                                <a href="{{ url_for('main.search') }}" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-search me-1"></i> Search Database
+                                </a>
+                                <button id="refresh-data-btn" class="btn btn-primary">
+                                    <i class="fas fa-sync-alt me-1"></i> Refresh Data Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Business Types Chart -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Business Types</h5>
+                        <p class="text-muted">Distribution of registered business types</p>
+                        <div id="business-types-chart" style="height: 300px;">
+                            <!-- Chart will be rendered here by Chart.js -->
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 mb-0">Loading chart data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Registrations -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">Recent Registrations</h5>
+                            <a href="{{ url_for('main.search') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+                        </div>
+                        
+                        <div class="list-group list-group-flush">
+                            {% for reg in stats.by_business_type[:5] %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ reg._id or 'Unknown' }}</h6>
+                                    <small class="text-muted">{{ reg.count }} records</small>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ (reg.count / (stats.by_business_type[0].count if stats.by_business_type else 1)) * 100 }}%" 
+                                         aria-valuenow="{{ reg.count }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="{{ stats.by_business_type[0].count if stats.by_business_type else 1 }}">
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p class="mb-0">No business type data available</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Update stats in real-time
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to update stats
+    function updateStats() {
+        fetch('{{ url_for("main.api_stats") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update total registrations
+                if (data.total_registrations !== undefined) {
+                    const totalEl = document.querySelector('.card:nth-child(1) h2');
+                    if (totalEl) {
+                        totalEl.textContent = data.total_registrations.toLocaleString();
+                    }
+                }
+                
+                // Update last updated time
+                if (data.last_updated) {
+                    const lastUpdatedEl = document.getElementById('last-updated-time');
+                    if (lastUpdatedEl) {
+                        lastUpdatedEl.textContent = 'Last updated: ' + new Date(data.last_updated).toLocaleString();
+                    }
+                }
+                
+                // Update stats count in navbar
+                const statsCountEl = document.getElementById('stats-count');
+                if (statsCountEl) {
+                    statsCountEl.textContent = data.total_registrations.toLocaleString() + ' records';
+                }
+            })
+            .catch(error => console.error('Error fetching stats:', error));
+    }
+    
+    // Initial stats update
+    updateStats();
+    
+    // Update stats every 30 seconds
+    setInterval(updateStats, 30000);
+    
+    // Handle refresh data button
+    const refreshBtn = document.getElementById('refresh-data-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Disable button and show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Refreshing...';
+            
+            // Make API call to refresh data
+            fetch('{{ url_for("main.api_refresh") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Data refreshed successfully! ' + data.message, 'success');
+                    // Update stats after refresh
+                    updateStats();
+                } else {
+                    showAlert('Error: ' + (data.error || 'Failed to refresh data'), 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Error: ' + error.message, 'danger');
+            })
+            .finally(() => {
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        });
+    }
+    
+    // Function to show alert
+    function showAlert(message, type = 'info') {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+        
+        // Add alert to the top of the content
+        const mainElement = document.querySelector('main');
+        if (mainElement) {
+            mainElement.insertAdjacentHTML('afterbegin', alertHtml);
+        }
+    }
+    
+    // Initialize business types chart
+    const businessTypesData = [
+        {% for bt in stats.by_business_type %}
+        { name: '{{ bt._id|default("Unknown")|e }}', count: {{ bt.count }} }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (businessTypesData.length > 0) {
+        const ctx = document.createElement('canvas');
+        document.getElementById('business-types-chart').innerHTML = '';
+        document.getElementById('business-types-chart').appendChild(ctx);
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: businessTypesData.map(item => item.name),
+                datasets: [{
+                    data: businessTypesData.map(item => item.count),
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#5a5c69', '#858796', '#3a3b45', '#1a1a1a', '#00a0dc'
+                    ],
+                    hoverBackgroundColor: [
+                        '#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617',
+                        '#3f3f4e', '#6b6d7d', '#2c2c35', '#0d0d0d', '#0078a8'
+                    ],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: "rgb(255,255,255)",
+                        bodyColor: "#858796",
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        padding: 15,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%',
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

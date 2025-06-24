@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}{{ registration.business_name }} - BizFindr{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-header {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0.35rem;
+    }
+    .detail-card {
+        border: none;
+        border-radius: 0.35rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: transform 0.2s ease-in-out;
+    }
+    .detail-card:hover {
+        transform: translateY(-5px);
+    }
+    .detail-card .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+        font-weight: 600;
+    }
+    .detail-label {
+        color: #5a5c69;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    .detail-value {
+        margin-bottom: 1rem;
+        color: #4e73df;
+    }
+    .similar-business {
+        border-left: 3px solid #4e73df;
+        transition: all 0.2s;
+    }
+    .similar-business:hover {
+        background-color: #f8f9fc;
+        transform: translateX(5px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="detail-header mb-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-1">{{ registration.business_name }}</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-white-50">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.search') }}" class="text-white-50">Search</a></li>
+                        <li class="breadcrumb-item active text-light" aria-current="page">Details</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex">
+                <span class="badge bg-{{ 'success' if registration.status == 'Active' else 'secondary' }} align-self-start">
+                    {{ registration.status }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Business Information Card -->
+            <div class="card detail-card mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Business Information</h6>
+                    <span class="badge bg-primary">ID: {{ registration.registration_id }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="detail-label">Business Name</div>
+                                <div class="detail-value">{{ registration.business_name }}</div>
+                            </div>
+                            
+                            {% if registration.business_type %}
+                            <div class="mb-3">
+                                <div class="detail-label">Business Type</div>
+                                <div class="detail-value">
+                                    <i class="fas fa-tag me-1"></i> {{ registration.business_type }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if registration.date_registration %}
+                            <div class="mb-3">
+                                <div class="detail-label">Registration Date</div>
+                                <div class="detail-value">
+                                    <i class="far fa-calendar-alt me-1"></i> 
+                                    {{ registration.date_registration.strftime('%B %d, %Y') }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if registration.status %}
+                            <div class="mb-3">
+                                <div class="detail-label">Status</div>
+                                <div class="detail-value">
+                                    <span class="badge bg-{{ 'success' if registration.status == 'Active' else 'secondary' }}">
+                                        {{ registration.status }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if registration.agent_name %}
+                            <div class="mb-3">
+                                <div class="detail-label">Registered Agent</div>
+                                <div class="detail-value">{{ registration.agent_name }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if registration.jurisdiction %}
+                            <div class="mb-3">
+                                <div class="detail-label">Jurisdiction</div>
+                                <div class="detail-value">{{ registration.jurisdiction }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Address Information -->
+            {% if registration.address %}
+            <div class="card detail-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Address Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-uppercase small text-muted mb-3">Business Address</h6>
+                            <address class="mb-0">
+                                {% if registration.address.street %}
+                                    <div>{{ registration.address.street }}</div>
+                                {% endif %}
+                                <div>
+                                    {% if registration.address.city %}{{ registration.address.city }}, {% endif %}
+                                    {% if registration.address.state %}{{ registration.address.state }} {% endif %}
+                                    {% if registration.address.zip %}{{ registration.address.zip }}{% endif %}
+                                </div>
+                            </address>
+                        </div>
+                        {% if registration.principal_office_address %}
+                        <div class="col-md-6">
+                            <h6 class="text-uppercase small text-muted mb-3">Principal Office</h6>
+                            <address class="mb-0">
+                                {% if registration.principal_office_address.street %}
+                                    <div>{{ registration.principal_office_address.street }}</div>
+                                {% endif %}
+                                <div>
+                                    {% if registration.principal_office_address.city %}{{ registration.principal_office_address.city }}, {% endif %}
+                                    {% if registration.principal_office_address.state %}{{ registration.principal_office_address.state }} {% endif %}
+                                    {% if registration.principal_office_address.zip %}{{ registration.principal_office_address.zip }}{% endif %}
+                                </div>
+                            </address>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Additional Information -->
+            <div class="card detail-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Additional Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if registration.state_id %}
+                            <div class="mb-3">
+                                <div class="detail-label">State ID</div>
+                                <div class="detail-value">{{ registration.state_id }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if registration.filing_date %}
+                            <div class="mb-3">
+                                <div class="detail-label">Filing Date</div>
+                                <div class="detail-value">
+                                    {{ registration.filing_date.strftime('%B %d, %Y') if registration.filing_date is string else registration.filing_date }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="detail-label">Record Created</div>
+                                <div class="detail-value">
+                                    <i class="far fa-clock me-1"></i> 
+                                    {{ registration.created_at.strftime('%B %d, %Y') }}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="detail-label">Last Updated</div>
+                                <div class="detail-value">
+                                    <i class="fas fa-history me-1"></i> 
+                                    {{ registration.updated_at.strftime('%B %d, %Y') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Actions Card -->
+            <div class="card detail-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-primary mb-2" onclick="window.print()">
+                            <i class="fas fa-print me-1"></i> Print Details
+                        </a>
+                        <a href="#" class="btn btn-outline-primary mb-2">
+                            <i class="fas fa-download me-1"></i> Export as PDF
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary mb-2">
+                            <i class="fas fa-flag me-1"></i> Report Issue
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Similar Businesses -->
+            {% if similar %}
+            <div class="card detail-card mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Similar Businesses</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for business in similar %}
+                        <a href="{{ url_for('main.registration_detail', registration_id=business.registration_id) }}" 
+                           class="list-group-item list-group-item-action similar-business">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ business.business_name }}</h6>
+                                <small class="text-muted">{{ business.date_registration.strftime('%m/%d/%Y') }}</small>
+                            </div>
+                            <small class="text-muted">{{ business.business_type or 'N/A' }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Help Card -->
+            <div class="card detail-card">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Need Help?</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-3">
+                        If you have questions about this business registration, please contact us.
+                    </p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-question-circle me-1"></i> Get Help
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle print button
+    document.querySelector('.btn-print').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.print();
+    });
+    
+    // Handle back to search button
+    document.querySelector('.btn-back').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.history.back();
+    });
+});
+</script>
+{% endblock %}

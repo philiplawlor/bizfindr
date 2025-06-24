@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - BizFindr{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="error-container p-5 rounded-3 bg-white shadow-sm">
+                <div class="error-number text-primary mb-4" style="font-size: 8rem; font-weight: 900; line-height: 1;">
+                    404
+                </div>
+                <h1 class="h2 mb-4">Page Not Found</h1>
+                <p class="lead text-muted mb-4">
+                    Oops! The page you're looking for doesn't exist or has been moved.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary px-4">
+                        <i class="fas fa-home me-2"></i> Go to Homepage
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary px-4">
+                        <i class="fas fa-arrow-left me-2"></i> Go Back
+                    </button>
+                </div>
+                <div class="mt-5">
+                    <p class="text-muted mb-2">Or try searching for what you're looking for:</p>
+                    <form action="{{ url_for('main.search') }}" method="get" class="d-flex max-w-400 mx-auto">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Search businesses..." required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="mt-5">
+                <h3 class="h5 mb-3">Popular Pages</h3>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('main.search') }}" class="card h-100 border-0 shadow-sm text-decoration-none">
+                            <div class="card-body text-center">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-search text-primary"></i>
+                                </div>
+                                <h4 class="h6 mb-0">Business Search</h4>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('main.about') }}" class="card h-100 border-0 shadow-sm text-decoration-none">
+                            <div class="card-body text-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-info-circle text-success"></i>
+                                </div>
+                                <h4 class="h6 mb-0">About BizFindr</h4>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="#" class="card h-100 border-0 shadow-sm text-decoration-none" data-bs-toggle="modal" data-bs-target="#contactModal">
+                            <div class="card-body text-center">
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-envelope text-warning"></i>
+                                </div>
+                                <h4 class="h6 mb-0">Contact Support</h4>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactModalLabel">Contact Support</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="supportForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Your Name</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">How can we help?</label>
+                        <textarea class="form-control" id="message" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="privacy" required>
+                            <label class="form-check-label small" for="privacy">
+                                I agree to the <a href="#" target="_blank">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="supportForm" class="btn btn-primary">Send Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-container {
+    background: linear-gradient(180deg, #f8f9fc 0%, #ffffff 100%);
+    border: 1px solid #e3e6f0;
+}
+
+.max-w-400 {
+    max-width: 400px;
+}
+
+/* Animation for the 404 text */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.error-number {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Hover effects for cards */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem 0.5rem rgba(58, 59, 69, 0.15) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .error-number {
+        font-size: 6rem !important;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .d-flex.justify-content-center {
+        flex-direction: column;
+    }
+    
+    .gap-3 {
+        gap: 1rem !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle form submission
+    const supportForm = document.getElementById('supportForm');
+    if (supportForm) {
+        supportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            const formObject = {};
+            formData.forEach((value, key) => {
+                formObject[key] = value;
+            });
+            
+            // Here you would typically send the form data to your server
+            console.log('Support form submitted:', formObject);
+            
+            // Show success message
+            const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            showAlert('Thank you for your message! Our support team will get back to you soon.', 'success');
+            this.reset();
+        });
+    }
+    
+    // Show the modal if there's a hash in the URL
+    if (window.location.hash === '#contact') {
+        const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
+        contactModal.show();
+    }
+});
+</script>
+{% endblock %}
