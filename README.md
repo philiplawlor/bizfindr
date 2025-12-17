@@ -12,7 +12,7 @@ A web application that fetches and displays business registration data from the 
 - Searchable web interface
 - RESTful API endpoints
 - Docker containerization
-- Background task processing (coming soon)
+- Background task processing (refactored - simple Redis-based tasks)
 - Redis-based caching and rate limiting
 - Comprehensive logging and monitoring
 
@@ -49,50 +49,44 @@ A web application that fetches and displays business registration data from the 
    ```
 
    This will start the following services:
-   - Flask application (port 5000)
+   - Flask application (port 5656)
    - MongoDB (port 27017)
    - Redis (port 6379)
+   - MongoDB Express (port 8081)
 
 5. Access the application:
-   - Web interface: http://localhost:5000
-   - API documentation: http://localhost:5000/api/docs
+   - Web interface: http://localhost:5656
+   - API documentation: http://localhost:5656/api/docs
+   - MongoDB Express: http://localhost:8081
 
 ## Background Tasks
 
-Background task processing is currently being refactored. This section will be updated with the new implementation details soon.
+Background task processing has been simplified to use Redis-based task queues without Celery. The current implementation provides:
 
-```bash
-# Start a Celery worker
-celery -A app.core.celery_app.celery_app worker --loglevel=info
+- Simple task queuing using Redis lists
+- Basic task status tracking
+- Retry mechanisms for failed tasks
+- Task logging and monitoring
 
-# Start Celery beat for scheduled tasks
-celery -A app.core.celery_app.celery_app beat --loglevel=info
-
-# Call a specific task from Python
-from app.tasks.metrics import update_business_metrics
-update_business_metrics.delay(business_id="your_business_id")
-```
+For complex background processing, the system can be extended with a more robust task queue in the future.
 
 ## Development
 
 ### Adding New Tasks
 
-1. Create a new module in `app/tasks/` for your task category (e.g., `app/tasks/notifications.py`)
-2. Define your task functions using the `@task` decorator:
-   ```python
-   from app.core.celery_app import task
-   
-   @task(bind=True, max_retries=3, default_retry_delay=60, time_limit=300)
-   def my_task(self, arg1, arg2):
-       try:
-           # Task implementation
-           return {"status": "success"}
-       except Exception as exc:
-           self.retry(exc=exc)
-   ```
+Simple background tasks can be added using the Redis-based task system:
 
-3. Register the task in `app/tasks/__init__.py`
-4. If it's a periodic task, add it to `CeleryConfig.beat_schedule` in `app/core/celery_config.py`
+1. Create task functions in `app/services/task_service.py`
+2. Use the `queue_task` utility to enqueue tasks
+3. Process tasks using the `process_tasks` endpoint
+
+Example:
+```python
+from app.services.task_service import queue_task
+
+# Queue a background task
+queue_task("task_name", {"param1": "value1"})
+```
 
 ### Task Best Practices
 
@@ -108,9 +102,9 @@ update_business_metrics.delay(business_id="your_business_id")
 
 ### Task Monitoring
 
-- **Flower Dashboard**: Real-time monitoring of Celery tasks at http://localhost:5555
-- **Prometheus Metrics**: Task metrics are exposed at `/metrics` endpoint
-- **Logging**: All task executions are logged with structured JSON format
+- **Application Logs**: Task executions are logged with structured JSON format
+- **Redis Monitoring**: Monitor task queues using Redis CLI or monitoring tools
+- **API Endpoints**: Task status available through `/api/v1/tasks` endpoints
 
 ### Log Files
 
@@ -131,19 +125,20 @@ Configure alerts for:
 ### Common Issues
 
 1. **Background tasks not executing**
-   - Background task processing is currently being refactored
+   - Check Redis connection and queue status
+   - Verify task processing endpoint is accessible
    - Check application logs for any errors
-   - Verify Redis connection
 
 2. **Task failures**
-   - Check task logs in Flower
+   - Check task logs in application logs
    - Look for exceptions in application logs
    - Verify task dependencies and environment
+   - Monitor Redis queue length
 
 3. **Performance issues**
-   - Monitor worker resource usage
-   - Adjust concurrency settings
-   - Optimize task granularity
+   - Monitor application resource usage
+   - Check Redis memory usage
+   - Optimize task granularity and database queries
 
 For additional help, check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md).
 

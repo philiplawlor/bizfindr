@@ -5,21 +5,150 @@
 {% block extra_css %}
 <style>
     .search-card {
-        transition: transform 0.2s ease-in-out;
+        transition: all 0.3s ease-in-out;
+        border: 1px solid rgba(78, 115, 223, 0.1);
     }
     .search-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 0.75rem 1.5rem rgba(78, 115, 223, 0.15) !important;
+        border-color: rgba(78, 115, 223, 0.3);
     }
     .result-card {
         border-left: 4px solid #4e73df;
+        transition: all 0.2s ease-in-out;
+    }
+    .result-card:hover {
+        transform: translateX(4px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        border-left-width: 6px;
+    }
+    .search-input-group {
+        position: relative;
+    }
+    .search-input-group .form-control {
+        padding-left: 3rem;
+        border-radius: 50px;
+        border: 2px solid #e3e6f0;
+        transition: all 0.2s ease-in-out;
+    }
+    .search-input-group .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    .search-input-group .input-icon {
+        position: absolute;
+        left: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #858796;
+        z-index: 10;
+    }
+    .filter-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
+    }
+    .filter-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
     }
     .pagination .page-item.active .page-link {
-        background-color: #4e73df;
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
         border-color: #4e73df;
     }
     .pagination .page-link {
         color: #4e73df;
+        border-radius: 0.375rem;
+        margin: 0 0.125rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .pagination .page-link:hover {
+        background-color: rgba(78, 115, 223, 0.1);
+        transform: translateY(-1px);
+    }
+    .search-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e3e6f0;
+        border-top: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .suggestion-item {
+        padding: 0.75rem 1.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+        border-left: 3px solid transparent;
+    }
+    .suggestion-item:hover {
+        background-color: #f8f9fc;
+        border-left-color: #4e73df;
+    }
+    .suggestion-item.active {
+        background-color: #4e73df;
+        color: white;
+    }
+    .advanced-filters {
+        background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+        border-radius: 1rem;
+        border: 1px solid #e3e6f0;
+    }
+    .stats-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+    }
+    .loading-skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+    }
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .business-type-tag {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background: rgba(78, 115, 223, 0.1);
+        color: #4e73df;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-badge.active {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+        color: white;
+    }
+    .status-badge.inactive {
+        background: linear-gradient(135deg, #e74a3b 0%, #c0392b 100%);
+        color: white;
+    }
+    .status-badge.pending {
+        background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%);
+        color: white;
     }
 </style>
 {% endblock %}
@@ -37,52 +166,110 @@
             </div>
         </div>
         
+        <!-- Search Results Summary -->
+        {% if query or current_filters.business_type or current_filters.status %}
+            <div class="stats-summary">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">{{ "{:,}".format(total) }} Results Found</h4>
+                        <p class="mb-0 opacity-90">
+                            {% if query %}Searching for "{{ query }}"{% endif %}
+                            {% if current_filters.business_type %} • Type: {{ current_filters.business_type }}{% endif %}
+                            {% if current_filters.status %} • Status: {{ current_filters.status }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="{{ url_for('main.search') }}" class="btn btn-light btn-sm">
+                            <i class="fas fa-times me-1"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         <!-- Search Form -->
         <div class="card border-0 shadow-sm mb-4 search-card">
-            <div class="card-body">
-                <form method="get" action="{{ url_for('main.search') }}">
+            <div class="card-body p-4">
+                <form method="get" action="{{ url_for('main.search') }}" id="searchForm">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
+                        <div class="col-lg-8">
+                            <div class="search-input-group">
+                                <i class="fas fa-search input-icon"></i>
                                 <input type="text" 
-                                       class="form-control form-control-lg border-start-0" 
+                                       class="form-control form-control-lg" 
                                        name="q" 
+                                       id="searchInput"
                                        value="{{ query }}" 
-                                       placeholder="Search by business name, ID, or keyword...">
+                                       placeholder="Search by business name, ID, or keyword..."
+                                       autocomplete="off">
+                                <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select form-select-lg" name="business_type">
-                                <option value="">All Business Types</option>
-                                {% for bt in business_types %}
-                                    <option value="{{ bt }}" {% if current_filters.business_type == bt %}selected{% endif %}>
-                                        {{ bt }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-search me-1"></i> Search
-                                </button>
+                        <div class="col-lg-4">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select class="form-select" name="business_type">
+                                        <option value="">All Types</option>
+                                        {% for bt in business_types %}
+                                            <option value="{{ bt }}" {% if current_filters.business_type == bt %}selected{% endif %}>
+                                                {{ bt }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-search me-1"></i> Search
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
+                    <!-- Active Filters Display -->
+                    {% if query or current_filters.business_type or current_filters.status or request.args.get('date_from') or request.args.get('date_to') %}
+                        <div class="mt-3">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="text-muted small me-2">Active filters:</span>
+                                {% if query %}
+                                    <span class="filter-badge">
+                                        <i class="fas fa-search me-1"></i>{{ query }}
+                                        <a href="{{ url_for('main.search', business_type=current_filters.business_type, status=current_filters.status, date_from=request.args.get('date_from'), date_to=request.args.get('date_to')) }}" class="text-white text-decoration-none ms-1">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </span>
+                                {% endif %}
+                                {% if current_filters.business_type %}
+                                    <span class="filter-badge">
+                                        <i class="fas fa-tag me-1"></i>{{ current_filters.business_type }}
+                                        <a href="{{ url_for('main.search', q=query, status=current_filters.status, date_from=request.args.get('date_from'), date_to=request.args.get('date_to')) }}" class="text-white text-decoration-none ms-1">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </span>
+                                {% endif %}
+                                {% if current_filters.status %}
+                                    <span class="filter-badge">
+                                        <i class="fas fa-flag me-1"></i>{{ current_filters.status }}
+                                        <a href="{{ url_for('main.search', q=query, business_type=current_filters.business_type, date_from=request.args.get('date_from'), date_to=request.args.get('date_to')) }}" class="text-white text-decoration-none ms-1">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
                     <!-- Advanced Filters (Collapsible) -->
-                    <div class="mt-3">
-                        <a class="text-decoration-none" data-bs-toggle="collapse" href="#advancedFilters" role="button">
+                    <div class="mt-4">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
                             <i class="fas fa-sliders-h me-1"></i> Advanced Filters
-                        </a>
-                        <div class="collapse mt-2" id="advancedFilters">
-                            <div class="card card-body border-0 bg-light">
+                            <i class="fas fa-chevron-down ms-1"></i>
+                        </button>
+                        <div class="collapse mt-3" id="advancedFilters">
+                            <div class="advanced-filters p-4">
                                 <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Status</label>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Status</label>
                                         <select class="form-select" name="status">
                                             <option value="">Any Status</option>
                                             <option value="Active" {% if current_filters.status == 'Active' %}selected{% endif %}>Active</option>
@@ -90,15 +277,24 @@
                                             <option value="Pending" {% if current_filters.status == 'Pending' %}selected{% endif %}>Pending</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Registered After</label>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Registered After</label>
                                         <input type="date" class="form-control" name="date_from" 
                                                value="{{ request.args.get('date_from', '') }}">
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Registered Before</label>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Registered Before</label>
                                         <input type="date" class="form-control" name="date_to" 
                                                value="{{ request.args.get('date_to', '') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Results per page</label>
+                                        <select class="form-select" name="per_page">
+                                            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                                            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -113,51 +309,69 @@
             {% if results %}
                 <div class="mb-4">
                     {% for result in results %}
-                        <div class="card border-0 shadow-sm mb-3 result-card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <h5 class="card-title mb-1">
-                                            <a href="{{ url_for('main.registration_detail', registration_id=result.registration_id) }}" 
-                                               class="text-decoration-none">
-                                                {{ result.business_name }}
-                                            </a>
-                                        </h5>
-                                        <p class="text-muted mb-2">
-                                            <span class="me-3">
-                                                <i class="fas fa-id-card me-1"></i> {{ result.registration_id }}
-                                            </span>
-                                            <span class="me-3">
-                                                <i class="fas fa-tag me-1"></i> {{ result.business_type or 'N/A' }}
-                                            </span>
-                                            <span class="badge bg-{{ 'success' if result.status == 'Active' else 'secondary' }}">
-                                                {{ result.status or 'Unknown' }}
-                                            </span>
-                                        </p>
-                                        {% if result.address %}
-                                            <p class="mb-0">
-                                                <i class="fas fa-map-marker-alt me-1 text-danger"></i>
-                                                {% if result.address.street %}{{ result.address.street }}, {% endif %}
-                                                {% if result.address.city %}{{ result.address.city }}, {% endif %}
-                                                {% if result.address.state %}{{ result.address.state }} {% endif %}
-                                                {% if result.address.zip %}{{ result.address.zip }}{% endif %}
-                                            </p>
-                                        {% endif %}
+                        <div class="card border-0 shadow-sm mb-4 result-card">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col-lg-8">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <div class="me-3">
+                                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                                    <i class="fas fa-building text-primary fa-lg"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h5 class="card-title mb-2">
+                                                    <a href="{{ url_for('main.registration_detail', registration_id=result.registration_id) }}" 
+                                                       class="text-decoration-none text-dark hover-primary">
+                                                        {{ result.business_name }}
+                                                    </a>
+                                                </h5>
+                                                
+                                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                                    <span class="business-type-tag">
+                                                        <i class="fas fa-tag me-1"></i>{{ result.business_type or 'N/A' }}
+                                                    </span>
+                                                    <span class="status-badge {{ (result.status|lower or 'unknown') }}">
+                                                        {{ result.status or 'Unknown' }}
+                                                    </span>
+                                                </div>
+                                                
+                                                <div class="text-muted small mb-2">
+                                                    <span class="me-3">
+                                                        <i class="fas fa-id-card me-1"></i> 
+                                                        <strong>ID:</strong> {{ result.registration_id }}
+                                                    </span>
+                                                </div>
+                                                
+                                                {% if result.address %}
+                                                    <div class="text-muted small">
+                                                        <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                                                        {% if result.address.street %}{{ result.address.street }}, {% endif %}
+                                                        {% if result.address.city %}{{ result.address.city }}, {% endif %}
+                                                        {% if result.address.state %}{{ result.address.state }} {% endif %}
+                                                        {% if result.address.zip %}{{ result.address.zip }}{% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4 text-md-end">
-                                        <div class="mt-2 mt-md-0">
-                                            <span class="text-muted d-block">
+                                    <div class="col-lg-4 text-lg-end">
+                                        <div class="d-flex flex-column align-items-lg-end">
+                                            <div class="text-muted small mb-2">
                                                 <i class="far fa-calendar-alt me-1"></i>
                                                 {% if result.date_registration %}
-                                                    {{ result.date_registration.strftime('%b %d, %Y') }}
+                                                    <strong>Registered:</strong> {{ result.date_registration.strftime('%b %d, %Y') }}
                                                 {% else %}
-                                                    Date not available
+                                                    <strong>Registered:</strong> Date not available
                                                 {% endif %}
-                                            </span>
-                                            <a href="{{ url_for('main.registration_detail', registration_id=result.registration_id) }}" 
-                                               class="btn btn-sm btn-outline-primary mt-2">
-                                                View Details <i class="fas fa-arrow-right ms-1"></i>
-                                            </a>
+                                            </div>
+                                            
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('main.registration_detail', registration_id=result.registration_id) }}" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-eye me-1"></i> View Details
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -299,32 +513,224 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // Handle clear filters button
-    const clearFiltersBtn = document.getElementById('clear-filters');
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.href = '{{ url_for("main.search") }}';
-        });
-    }
+    // Search suggestions functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    let suggestionsTimeout;
+    let currentSuggestions = [];
+    let selectedSuggestionIndex = -1;
     
-    // Handle enter key in search input
-    const searchInput = document.querySelector('input[name="q"]');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                this.form.submit();
+    if (searchInput && searchSuggestions) {
+        // Debounced search function
+        const debouncedSearch = debounce(function(query) {
+            if (query.length < 2) {
+                hideSuggestions();
+                return;
+            }
+            
+            // Show loading state
+            showSuggestionsLoading();
+            
+            // Fetch suggestions from API
+            fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        currentSuggestions = data.suggestions;
+                        displaySuggestions(data.suggestions);
+                    } else {
+                        hideSuggestions();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching suggestions:', error);
+                    hideSuggestions();
+                });
+        }, 300);
+        
+        // Input event handler
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            clearTimeout(suggestionsTimeout);
+            suggestionsTimeout = setTimeout(() => debouncedSearch(query), 300);
+        });
+        
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', function(e) {
+            const suggestionItems = searchSuggestions.querySelectorAll('.suggestion-item');
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestionItems.length - 1);
+                    updateSuggestionSelection(suggestionItems);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+                    updateSuggestionSelection(suggestionItems);
+                    break;
+                case 'Enter':
+                    if (selectedSuggestionIndex >= 0) {
+                        e.preventDefault();
+                        selectSuggestion(currentSuggestions[selectedSuggestionIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    hideSuggestions();
+                    searchInput.blur();
+                    break;
+            }
+        });
+        
+        // Click outside to hide suggestions
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+                hideSuggestions();
+            }
+        });
+        
+        // Focus to show suggestions if there's a query
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2 && currentSuggestions.length > 0) {
+                displaySuggestions(currentSuggestions);
             }
         });
     }
     
-    // Handle filter changes
-    const filterSelects = document.querySelectorAll('select[name]');
+    function showSuggestionsLoading() {
+        searchSuggestions.innerHTML = `
+            <div class="suggestion-item text-muted">
+                <i class="fas fa-spinner fa-spin me-2"></i> Searching...
+            </div>
+        `;
+        searchSuggestions.style.display = 'block';
+    }
+    
+    function displaySuggestions(suggestions) {
+        if (!suggestions || suggestions.length === 0) {
+            hideSuggestions();
+            return;
+        }
+        
+        const html = suggestions.slice(0, 8).map((suggestion, index) => `
+            <div class="suggestion-item" data-index="${index}" data-value="${suggestion.value}">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-search me-3 text-muted"></i>
+                    <div>
+                        <div class="fw-bold">${highlightMatch(suggestion.value, searchInput.value)}</div>
+                        ${suggestion.description ? `<div class="small text-muted">${suggestion.description}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        searchSuggestions.innerHTML = html;
+        searchSuggestions.style.display = 'block';
+        
+        // Add click handlers
+        searchSuggestions.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                selectSuggestion(currentSuggestions[index]);
+            });
+        });
+    }
+    
+    function hideSuggestions() {
+        searchSuggestions.style.display = 'none';
+        selectedSuggestionIndex = -1;
+    }
+    
+    function selectSuggestion(suggestion) {
+        searchInput.value = suggestion.value;
+        hideSuggestions();
+        searchInput.form.submit();
+    }
+    
+    function updateSuggestionSelection(items) {
+        items.forEach((item, index) => {
+            if (index === selectedSuggestionIndex) {
+                item.classList.add('active');
+                // Scroll into view if needed
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+    
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return text.replace(regex, '<strong>$1</strong>');
+    }
+    
+    // Handle filter changes with auto-submit
+    const filterSelects = document.querySelectorAll('#searchForm select[name]');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
-            this.form.submit();
+            // Add loading state
+            const form = this.form;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Applying...';
+                
+                // Re-enable after a short delay
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 2000);
+            }
+            
+            // Submit form
+            form.submit();
         });
     });
+    
+    // Handle form submission with loading state
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Searching...';
+                
+                // Re-enable after delay (in case form doesn't submit)
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 5000);
+            }
+        });
+    }
+    
+    // Add smooth scroll behavior for pagination
+    document.querySelectorAll('.pagination a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Don't interfere with normal navigation, just ensure smooth scroll
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        });
+    });
+    
+    // Utility debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 });
 </script>
 {% endblock %}

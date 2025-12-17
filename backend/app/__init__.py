@@ -6,7 +6,8 @@ the Flask application instance.
 """
 import os
 import logging
-from flask import Flask, jsonify
+from datetime import datetime
+from flask import Flask, jsonify, request, send_from_directory, render_template
 from flask_cors import CORS
 from pymongo import MongoClient
 from werkzeug.exceptions import HTTPException
@@ -20,7 +21,30 @@ def create_app(test_config=None):
     Returns:
         Flask: The configured Flask application instance.
     """
-    app = Flask(__name__, instance_relative_config=True)
+    # Create the Flask app with template and static folder configuration
+    template_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
+    static_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static'))
+    
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        template_folder=template_folder,
+        static_folder=static_folder
+    )
+    
+    # Log the template and static folder paths for debugging
+    app.logger.info(f"Template folder: {app.template_folder}")
+    app.logger.info(f"Static folder: {app.static_folder}")
+    
+    # List files in template folder for debugging
+    try:
+        if os.path.exists(app.template_folder):
+            template_files = os.listdir(app.template_folder)
+            app.logger.info(f"Files in template directory: {template_files}")
+        else:
+            app.logger.error(f"Template directory does not exist: {app.template_folder}")
+    except Exception as e:
+        app.logger.error(f"Error listing template directory: {str(e)}")
     
     # Configure the application
     configure_app(app, test_config)
@@ -39,6 +63,10 @@ def create_app(test_config=None):
     
     # Register commands
     register_commands(app)
+    
+    # Log final configuration
+    app.logger.info(f"Final template folder: {app.template_folder}")
+    app.logger.info(f"Final static folder: {app.static_folder}")
     
     return app
 
@@ -80,7 +108,7 @@ def initialize_extensions(app):
     
     # Initialize MongoDB client
     app.mongo = MongoClient(app.config['MONGO_URI'])
-    app.db = app.mongo[app.config.get('MONGO_DB_NAME', 'bizfindr')]
+    app.db = app.mongo[app.config.get('MONGO_DB', 'bizfindr')]
     
     # Configure logging
     if not app.debug and not app.testing:
@@ -105,13 +133,50 @@ def configure_logging(app):
     app.logger.info('BizFindr startup')
 
 def register_blueprints(app):
-    """Register Flask blueprints.
+    """Register Flask blueprints and frontend routes.
     
     Args:
         app (Flask): The Flask application instance.
     """
+    # Import and register frontend blueprint first (order matters for route precedence)
+    from .frontend import bp as frontend_bp
+    app.register_blueprint(frontend_bp)
+    
+    # Import and register API blueprint
     from . import api
     app.register_blueprint(api.bp)
+    
+    # Log all registered routes after blueprints registration
+    app.logger.info("Registered routes after blueprints:")
+    for rule in app.url_map.iter_rules():
+        app.logger.info(f"{rule.endpoint}: {rule.rule}")
+    
+    # Register catch-all route for SPA routing (must be registered last)
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        """Serve frontend files for SPA routing."""
+        # Handle static files (CSS, JS, images, etc.)
+        if path != 'index.html' and os.path.exists(os.path.join(app.static_folder, path)):
+            app.logger.info(f"Serving static file: {path}")
+            return send_from_directory(app.static_folder, path)
+        
+        # Default stats to prevent template errors
+        stats = {
+            'total_registrations': 0,
+            'latest_registration': None,
+            'by_business_type': [],
+            'by_status': [],
+            'recent_registrations': []
+        }
+        
+        # For all other routes, serve index.html (SPA routing)
+        app.logger.info(f"Serving index.html for SPA route: {path}")
+        return render_template('index.html', stats=stats, now=datetime.utcnow())
+    
+    # Log all registered routes after catch-all route registration
+    app.logger.info("Registered routes after catch-all route:")
+    for rule in app.url_map.iter_rules():
+        app.logger.info(f"{rule.endpoint}: {rule.rule}")
 
 def register_error_handlers(app):
     """Register error handlers.
