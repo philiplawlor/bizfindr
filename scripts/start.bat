@@ -16,8 +16,22 @@ if not exist "..\backend\.env" (
     copy "..\backend\.env.example" "..\backend\.env" >nul
 )
 
+:: Check if frontend package.json exists
+if not exist "..\frontend\package.json" (
+    echo Warning: Frontend package.json not found. Running setup first...
+    call setup.bat
+    if %ERRORLEVEL% neq 0 (
+        echo Error: Setup failed. Please check the error messages above.
+        exit /b 1
+    )
+)
+
 :: Start the application using Docker Compose
 echo Starting services with Docker Compose...
+echo - Backend API: http://localhost:5656
+echo - Frontend: http://localhost:80
+echo - MongoDB: localhost:27017
+echo - Redis: localhost:6379
 cd ..
 docker-compose -f docker-compose.yml up -d --build
 

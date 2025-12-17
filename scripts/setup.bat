@@ -3,6 +3,12 @@ setlocal enabledelayedexpansion
 
 echo Setting up BizFindr development environment...
 
+:: Check if Node.js is installed (for local development)
+node --version >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo Warning: Node.js is not installed. Frontend will run in Docker container only.
+)
+
 :: Check if Docker is installed
 docker --version >nul 2>&1
 if %ERRORLEVEL% neq 0 (
@@ -15,6 +21,24 @@ docker-compose --version >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo Error: Docker Compose is not installed. Please install Docker Compose and try again.
     exit /b 1
+)
+
+:: Create frontend package.json if it doesn't exist
+if not exist "..\frontend\package.json" (
+    echo Creating frontend package.json...
+    echo {> "..\frontend\package.json"
+    echo   "name": "bizfindr-frontend",>> "..\frontend\package.json"
+    echo   "version": "1.0.0",>> "..\frontend\package.json"
+    echo   "description": "BizFindr Frontend Application",>> "..\frontend\package.json"
+    echo   "main": "index.js",>> "..\frontend\package.json"
+    echo   "scripts": {>> "..\frontend\package.json"
+    echo     "start": "echo 'Frontend served by Flask backend'",>> "..\frontend\package.json"
+    echo     "dev": "echo 'Frontend served by Flask backend'",>> "..\frontend\package.json"
+    echo     "build": "echo 'Frontend assets built with Flask'" >> "..\frontend\package.json"
+    echo   },>> "..\frontend\package.json"
+    echo   "dependencies": {},>> "..\frontend\package.json"
+    echo   "devDependencies": {}>> "..\frontend\package.json"
+    echo }>> "..\frontend\package.json"
 )
 
 :: Create .env file from example if it doesn't exist
