@@ -9,11 +9,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    class Config:
-        extra = 'allow'  # Allow extra fields to be set on the model
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-        case_sensitive = True
+    model_config = {
+        "extra": "allow",  # Allow extra fields to be set on the model
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True
+    }
     
     # Application Settings
     PROJECT_NAME: str = "BizFindr"
@@ -150,11 +151,6 @@ class Settings(BaseSettings):
     
     # CORS Settings
     CORS_ORIGINS: List[str] = ["*"]
-    
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 
 # Create settings instance

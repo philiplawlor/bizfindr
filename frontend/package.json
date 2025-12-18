@@ -1,0 +1,13 @@
+{
+  "name": "bizfindr-frontend",
+  "version": "1.0.0",
+  "description": "BizFindr Frontend Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "echo 'Frontend served by Flask backend'",
+    "dev": "echo 'Frontend served by Flask backend'",
+    "build": "echo 'Frontend assets built with Flask'" 
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

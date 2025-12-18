@@ -164,3 +164,7 @@ def clear_cache() -> None:
             logger.info("Cache cleared successfully")
         except redis.RedisError as e:
             logger.error(f"Error clearing cache: {e}")
+
+
+# Export cache instance for direct use
+cache = get_cache()
